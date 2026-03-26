@@ -336,6 +336,17 @@ function stripXStateImports(code: string): string {
 }
 
 /**
+ * Remove ESM export syntax so code can be evaluated via `new Function()`.
+ */
+function stripExportSyntax(code: string): string {
+  return code
+    .replace(/^\s*export\s+default\s+/gm, '')
+    .replace(/^\s*export\s+(const|let|var|function|class)\b/gm, '$1')
+    .replace(/^\s*export\s*\{[^}]*\}\s*;?\s*$/gm, '')
+    .replace(/^\s*export\s*\*\s*from\s*['"][^'"]+['"]\s*;?\s*$/gm, '');
+}
+
+/**
  * Parse user XState code by evaluating it with `new Function()`.
  * Wraps `createMachine` and `setup().createMachine` to capture machines.
  */
@@ -369,7 +380,7 @@ export function parseXStateMachineCode(code: string): {
     } as any;
 
     const jsCode = tsBlankSpace(code);
-    const strippedCode = stripXStateImports(jsCode);
+    const strippedCode = stripExportSyntax(stripXStateImports(jsCode));
     const fn = new Function(...XSTATE_PARAM_NAMES, strippedCode);
 
     fn(
